@@ -3,26 +3,33 @@ set $amd64 = -1
 
 file vmlinux
 
-define hook
+define hook-stop
   if $amd64 == -1
-    if $cs == 8 || $cs == 27
-      if $lastcs != 8 && $lastcs != 27 && $cs == 8
-        set architecture i386
-      end
+    if $pc == 0xffffffff
+      set architecture i386:x86-64:intel
+      set $amd64 = 1
       x/i $pc
     else
-      if $lastcs == -1 || $lastcs == 8 || $lastcs == 27 || $cs == 0
-        set architecture i8086
+      if $cs == 8 || $cs == 27
+        if $lastcs != 8 && $lastcs != 27 && $cs == 8
+          set architecture i386
+        end
+        x/i $pc
+      else
+        if $lastcs == -1 || $lastcs == 8 || $lastcs == 27 || $cs == 0
+          set architecture i8086
+        end
+        printf "[%4x:%4x] ", $cs, $eip
       end
-      printf "[%4x:%4x] ", $cs, $eip
+      set $lastcs = $cs
     end
-    set $lastcs = $cs
   end
 end
 
 define x64
   set architecture i386:x86-64:intel
   set $amd64 = 1
+  x/i $pc
 end
 
 target remote localhost:1234
