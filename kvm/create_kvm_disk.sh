@@ -7,6 +7,7 @@ OS=`lsb_release -c | awk '{print $2}'`
 ARCH="amd64"
 KERNEL=`uname -r`
 LOCAL_KERNEL=`make kernelversion 2>/dev/null || true`
+LOCAL_VERSION=`scripts/setlocalversion 2>/dev/null || true`
 USER=oscar
 PASS=oscar
 TTYS=ttyS0
@@ -45,10 +46,11 @@ function copy_files {
 }
 
 if [ "$LOCAL_KERNEL" != "" ]; then
+	run sudo cp .config $MNTPNT/boot/config-$LOCAL_KERNEL$LOCAL_VERSION
 	run sudo mkdir -p $MNTPNT/lib/modules
 	run sudo make modules_install INSTALL_MOD_PATH=$MNTPNT
 else
-	copy_files /boot/vmlinuz-$KERNEL /boot/initrd.img-$KERNEL
+	copy_files /boot/vmlinuz-$KERNEL /boot/initrd.img-$KERNEL /boot/config-$KERNEL
 	copy_files /lib/modules/$KERNEL
 fi
 
@@ -68,6 +70,14 @@ run sudo mount --bind /dev/ $MNTPNT/dev; M1=1
 function chroot_run {
 	run sudo chroot $MNTPNT $@
 }
+
+if [ "$LOCAL_KERNEL" != "" ]; then
+	chroot_run mkinitramfs -o /boot/initrd.img-$LOCAL_KERNEL$LOCAL_VERSION $LOCAL_KERNEL$LOCAL_VERSION
+	run sudo mv -f $MNTPNT/boot/initrd.img-$LOCAL_KERNEL$LOCAL_VERSION initrd.img
+else
+	chroot_run mkinitramfs -o /boot/initrd.img-$KERNEL $KERNEL
+	run sudo mv -f $MNTPNT/boot/initrd.img-$KERNEL initrd.img
+fi
 
 cat > /tmp/adduser.sh <<EOF
 adduser $USER --disabled-password --gecos ""
