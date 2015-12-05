@@ -12,10 +12,11 @@ fi
 
 CONSOLE="console=tty1 highres=off $SERIAL_APPEND"
 ROOT="root=/dev/hda rw --no-log"
+NCPUS=`grep -c ^processor /proc/cpuinfo`
 
 set -x
  
-qemu-system-x86_64 $GDB -smb 4 -hda disk.img -kernel arch/x86/boot/bzImage \
+qemu-system-x86_64 $GDB -smp $NCPUS -hda disk.img -kernel arch/x86/boot/bzImage \
 	-initrd initrd.img \
 	-append "$CONSOLE $ROOT" \
 	-curses -snapshot $SERIAL
