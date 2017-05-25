@@ -1,9 +1,18 @@
 #!/bin/bash
 
+# Default architecture: x86_64
+ARCH=x86_64
+
 while [ "$1" != "" ]; do
 
 if [ "$1" = "-gdb" ]; then
 	GDB="-s"
+	shift
+fi
+
+if [ "$1" = "-arch" ]; then
+	ARCH=$2
+	shift
 	shift
 fi
 
@@ -41,7 +50,7 @@ NCPUS=`grep -c ^processor /proc/cpuinfo`
 
 set -x
  
-qemu-system-x86_64 $GDB -smp $NCPUS -hda disk.img -kernel arch/x86/boot/bzImage \
+qemu-system-$ARCH $GDB -smp $NCPUS -hda disk.img -kernel arch/x86/boot/bzImage \
 	-initrd initrd.img \
 	-append "$CONSOLE $ROOT $NET_APPEND commands=\"$CMD\"" \
 	-curses -snapshot $NET $SHARE_FS $SERIAL
