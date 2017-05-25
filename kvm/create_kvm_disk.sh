@@ -3,8 +3,8 @@
 DISK="disk.img"
 SIZE="20G"
 MNTPNT=`mktemp -d`
-OS=`lsb_release -c | awk '{print $2}'`
-ARCH="amd64"
+[ "$OS" != "" ] || OS=`lsb_release -c | awk '{print $2}'`
+[ "$ARCH" != "" ] || ARCH="amd64"
 KERNEL=`uname -r`
 LOCAL_KERNEL=`make kernelversion 2>/dev/null || true`
 LOCAL_VERSION=`scripts/setlocalversion 2>/dev/null || true`
@@ -64,6 +64,13 @@ EOF
 run sudo sh /tmp/setconsole.sh
 rm /tmp/setconsole.sh
 
+sudo sh -c "cat >> $MNTPNT/etc/network/interfaces" <<EOF
+
+auto eth0
+iface eth0 inet dhcp
+EOF
+
+
 run sudo mkdir -p $MNTPNT/dev
 run sudo mount --bind /dev/ $MNTPNT/dev; M1=1
 
@@ -86,6 +93,8 @@ EOF
 sudo mv /tmp/adduser.sh $MNTPNT
 chroot_run sh adduser.sh
 sudo rm $MNTPNT/adduser.sh
+chroot_run usermod -a -G sudo $USER
+
 chroot_run apt-get update
 chroot_run apt-get install --yes build-essential openssh-server autoconf
 
